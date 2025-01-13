@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrazione Voce</title>
+</head>
+<body>
+    <h1>Registrazione Voce</h1>
+    <button id="startRecord">Inizia Registrazione</button>
+    <button id="stopRecord" disabled>Ferma Registrazione</button>
+    <button id="playAudio" disabled>Riascolta</button>
+    <button id="sendAudio" disabled>Invia a Discord</button>
+    <audio id="audioPlayback" controls></audio>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioBlob;
+        const webhookUrl = 'https://discord.com/api/webhooks/1328431150653509867/iSid3po1Jz2IIfbmYnFtbIzqIjN2mx8VncMTD8NZMClZeaBn2GUXiiiuvPZiaqA4HfKg';
+
+        document.getElementById('startRecord').addEventListener('click', async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.start();
+
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                document.getElementById('audioPlayback').src = audioUrl;
+                document.getElementById('playAudio').disabled = false;
+                document.getElementById('sendAudio').disabled = false;
+            };
+
+            document.getElementById('startRecord').disabled = true;
+            document.getElementById('stopRecord').disabled = false;
+        });
+
+        document.getElementById('stopRecord').addEventListener('click', () => {
+            mediaRecorder.stop();
+            document.getElementById('startRecord').disabled = false;
+            document.getElementById('stopRecord').disabled = true;
+        });
+
+        document.getElementById('sendAudio').addEventListener('click', async () => {
+            const formData = new FormData();
+            formData.append('file', audioBlob, 'recording.mp3');
+
+            await fetch(webhookUrl, {
+                method: 'POST',
+                body: formData
+            });
+
+            alert('Audio inviato a Discord!');
+        });
+    </script>
+</body>
+</html>
